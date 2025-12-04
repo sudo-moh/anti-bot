@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Detection Dashboard</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-main: #F5F5F5;
+            --bg-card: #FFFFFF;
+            --color-success: #22C55E;
+            --color-danger: #EF4444;
+            --color-warning: #F59E0B;
+            --color-neutral: #6B7280;
+            --color-accent: #10B981;
+            --color-text: #1F2937;
+            --color-text-light: #6B7280;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.12);
+            --radius: 1.2rem;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-main);
+            color: var(--color-text);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+        }
+
+        iframe.canvased {
+            display: none;
+        }
+
+        /* Floating Header */
+        .floating-header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .btn {
+            background: var(--bg-card);
+            border: 2px solid var(--color-accent);
+            color: var(--color-accent);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background: var(--color-accent);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Card Grid */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Card */
+        .detection-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .detection-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+            border-color: var(--color-accent);
+        }
+
+        .card-header {
+            padding: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            transition: background 0.2s ease;
+        }
+
+        .card-header:hover {
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .card-header-left {
+            flex: 1;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-status {
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-badge {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-success { color: var(--color-success); }
+        .status-success .status-badge { background: var(--color-success); }
+        
+        .status-danger { color: var(--color-danger); }
+        .status-danger .status-badge { background: var(--color-danger); }
+        
+        .status-warning { color: var(--color-warning); }
+        .status-warning .status-badge { background: var(--color-warning); }
+
+        .card-score {
+            background: linear-gradient(135deg, var(--color-accent), #059669);
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            font-weight: 800;
+            font-size: 1.5rem;
+            min-width: 80px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .card-score.danger {
+            background: linear-gradient(135deg, var(--color-danger), #dc2626);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .card-score.warning {
+            background: linear-gradient(135deg, var(--color-warning), #d97706);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .expand-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-neutral);
+            transition: transform 0.3s ease;
+        }
+
+        .detection-card.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Card Body */
+        .card-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.4s ease;
+            background: #FAFAFA;
+        }
+
+        .detection-card.expanded .card-body {
+            max-height: fit-content;
+            height: auto;
+            padding: 1.5rem;
+            border-top: 2px solid #E5E7EB;
+        }
+
+        .detail-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 0.5rem;
+        }
+
+        .detail-table tr {
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+        .detail-table tr:hover {
+            transform: scale(1.01);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .detail-table td {
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .detail-table td:first-child {
+            font-weight: 600;
+            color: var(--color-text);
+            border-radius: 0.5rem 0 0 0.5rem;
+            width: 40%;
+        }
+
+        .detail-table td:last-child {
+            color: var(--color-text-light);
+            border-radius: 0 0.5rem 0.5rem 0;
+            word-break: break-word;
+        }
+
+        .detail-table td.passed {
+            background: #D1FAE5;
+            color: #065F46;
+            font-weight: 600;
+        }
+
+        .detail-table td.failed {
+            background: #FEE2E2;
+            color: #991B1B;
+            font-weight: 600;
+        }
+
+        .detail-table td.warn {
+            background: #FEF3C7;
+            color: #92400E;
+            font-weight: 600;
+        }
+
+        pre {
+            background: #1F2937;
+            color: #10B981;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            overflow-x: auto;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            margin: 0.5rem 0;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .age-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.4rem;
+            background: var(--color-neutral);
+            color: white;
+            margin-left: 0.5rem;
+            font-weight: 600;
+        }
+        /* Full-width card for specific tests */
+.card-full-width {
+    grid-column: 1 / -1;
+}
+
+/* Span 2 columns for specific tests */
+.card-wide {
+    grid-column: span 2;
+}
+
+@media (max-width: 1200px) {
+    .card-wide {
+        grid-column: span 1; /* Back to normal on smaller screens */
+    }
+}
+
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+        }
+
+        /* Smooth fade-in */
+        .detection-card {
+            animation: fadeInUp 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .detection-card:nth-child(1) { animation-delay: 0.05s; }
+        .detection-card:nth-child(2) { animation-delay: 0.1s; }
+        .detection-card:nth-child(3) { animation-delay: 0.15s; }
+        .detection-card:nth-child(4) { animation-delay: 0.2s; }
+        .detection-card:nth-child(5) { animation-delay: 0.25s; }
+        .detection-card:nth-child(6) { animation-delay: 0.3s; }
+    </style>
+
+    <script src="/static/fpCollect.min.js"></script>
+    <script src="/static/modernizr.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ua-parser-js@0.7.19/src/ua-parser.min.js"></script>
+    <script src="/static/fpScanner.js"></script>
+    <script src="/static/bot-detector.js"></script>
+    <script src="/static/detect-playwright.js"></script>
+    <script src="/static/ip-check.js"></script>
+    <script src="/static/profile-age.js"></script>
+</head>
+<body>
+
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(86860295, "init", {
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true
+    });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/86860295" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+
+
+
+<!-- Main Container -->
+<div class="container">
+    <!-- Controls -->
+    <div class="controls">
+        <button class="btn" onclick="expandAll()">
+             Expand All
+        </button>
+        <button class="btn" onclick="collapseAll()">
+             Collapse All
+        </button>
+    </div>
+    <!-- Card Grid -->
+    <div class="card-grid" id="card-container">
+        
+        <!-- Card 1: Basic Browser Tests -->
+        <div class="detection-card card-full-width" data-card="basic-tests">
+            <div class="card-header" onclick="toggleCard(this)">
+                <div class="card-header-left">
+                    <div class="card-title">
+                        🔍 Basic Browser Tests
+                    </div>
+                    <div class="card-status status-danger" id="basic-status">
+                        <span class="status-badge"></span>
+                        <span>Analyzing...</span>
+                    </div>
+                </div>
+                <div class="card-score" id="basic-score">--</div>
+                <div class="expand-icon">▼</div>
+            </div>
+            <div class="card-body">
+                <table class="detail-table">
+                    <tr>
+                        <td>User Agent <span class="age-tag">Old</span></td>
+                        <td class="failed result" id="user-agent-result"></td>
+                    </tr>
+                    <tr>
+                        <td>WebDriver <span class="age-tag">New</span></td>
+                        <td class="failed result" id="webdriver-result">present (failed)</td>
+                    </tr>
+                    <tr>
+                        <td>WebDriver Advanced</td>
+                        <td class="failed result" id="advanced-webdriver-result">failed</td>
+                    </tr>
+                    <tr>
+                        <td>Chrome <span class="age-tag">New</span></td>
+                        <td class="failed result" id="chrome-result">missing (failed)</td>
+                    </tr>
+                    <tr>
+                        <td>Permissions <span class="age-tag">New</span></td>
+                        <td class="failed result" id="permissions-result"></td>
+                    </tr>
+                    <tr>
+                        <td>Plugins Length <span class="age-tag">Old</span></td>
+                        <td class="failed result" id="plugins-length-result"></td>
+                    </tr>
+                    <tr>
+                        <td>Plugins Type</td>
+                        <td class="failed result" id="plugins-type-result"></td>
+                    </tr>
+                    <tr>
+                        <td>Languages <span class="age-tag">Old</span></td>
+                        <td class="failed result" id="languages-result"></td>
+                    </tr>
+                    <tr>
+                        <td>WebGL Vendor</td>
+                        <td id="webgl-vendor"></td>
+                    </tr>
+                    <tr>
+                        <td>WebGL Renderer</td>
+                        <td id="webgl-renderer"></td>
+                    </tr>
+                    <tr>
+                        <td>Broken Image Dimensions</td>
+                        <td id="broken-image-dimensions"></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Card 2: Advanced Bot Detection (Test 1) -->
+<!-- Card 2: Advanced Bot Detection (Test 1) - NOW FULL WIDTH -->
+<div class="detection-card card-full-width" data-card="advanced-test1">
+    <div class="card-header" onclick="toggleCard(this)">
+        <div class="card-header-left">
+            <div class="card-title">
+                🤖 Advanced Detection (Test 1)
+            </div>
+            <div class="card-status status-warning" id="test1-status">
+                <span class="status-badge"></span>
+                <span>Running...</span>
+            </div>
+        </div>
+        <div class="card-score warning" id="test1-score">--</div>
+        <div class="expand-icon">▼</div>
+    </div>
+    <div class="card-body" id="test1-body">
+        <div style="text-align: center; padding: 2rem;">
+            <div class="loading"></div>
+        </div>
+    </div>
+</div>
+
+
+        <!-- Card 3: Playwright Detection (Test 2) -->
+        <div class="detection-card card-full-width" data-card="playwright-test">
+            <div class="card-header" onclick="toggleCard(this)">
+                <div class="card-header-left">
+                    <div class="card-title">
+                        🎭 Playwright Detection (Test 2)
+                    </div>
+                    <div class="card-status status-warning" id="test2-status">
+                        <span class="status-badge"></span>
+                        <span>Running...</span>
+                    </div>
+                </div>
+                <div class="card-score warning" id="test2-score">--</div>
+                <div class="expand-icon">▼</div>
+            </div>
+            <div class="card-body" id="test2-body">
+                <div style="text-align: center; padding: 2rem;">
+                    <div class="loading"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: HTTP Headers Validation -->
+        <div class="detection-card card-full-width" data-card="http-headers">
+            <div class="card-header" onclick="toggleCard(this)">
+                <div class="card-header-left">
+                    <div class="card-title">
+                        📡 HTTP Headers Validation
+                    </div>
+                    <div class="card-status status-warning" id="http-status">
+                        <span class="status-badge"></span>
+                        <span>Analyzing...</span>
+                    </div>
+                </div>
+                <div class="card-score" id="http-score">--</div>
+                <div class="expand-icon">▼</div>
+            </div>
+            <div class="card-body" id="http-body">
+                <div style="text-align: center; padding: 2rem;">
+                    <div class="loading"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 5: Browser Profile Age -->
+        <div class="detection-card card-full-width" data-card="profile-age">
+            <div class="card-header" onclick="toggleCard(this)">
+                <div class="card-header-left">
+                    <div class="card-title">
+                        ⏰ Browser Profile Age
+                    </div>
+                    <div class="card-status status-warning" id="profile-status">
+                        <span class="status-badge"></span>
+                        <span>Detecting...</span>
+                    </div>
+                </div>
+                <div class="card-score" id="profile-score">--</div>
+                <div class="expand-icon">▼</div>
+            </div>
+            <div class="card-body" id="profile-body">
+                <div style="text-align: center; padding: 2rem;">
+                    <div class="loading"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 6: IP Location & Timezone -->
+        <div class="detection-card card-full-width" data-card="ip-location">
+            <div class="card-header" onclick="toggleCard(this)">
+                <div class="card-header-left">
+                    <div class="card-title">
+                        🌍 IP Location & Timezone
+                    </div>
+                    <div class="card-status status-success" id="ip-status">
+                        <span class="status-badge"></span>
+                        <span>Checking...</span>
+                    </div>
+                </div>
+                <div class="card-score" id="ip-score">--</div>
+                <div class="expand-icon">▼</div>
+            </div>
+            <div class="card-body" id="ip-body">
+                <div style="text-align: center; padding: 2rem;">
+                    <div class="loading"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 7: FingerprintJS Analysis -->
+        <div class="detection-card card-full-width" data-card="fingerprint">
+            <div class="card-header" onclick="toggleCard(this)">
+                <div class="card-header-left">
+                    <div class="card-title">
+                        🔐 FingerprintJS Analysis
+                    </div>
+                    <div class="card-status status-warning" id="fp-status">
+                        <span class="status-badge"></span>
+                        <span>Scanning...</span>
+                    </div>
+                </div>
+                <div class="card-score" id="fp-score">--</div>
+                <div class="expand-icon">▼</div>
+            </div>
+            <div class="card-body" id="fp-body">
+                <div style="text-align: center; padding: 2rem;">
+                    <div class="loading"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 8: Navigator & Browser Details -->
+        <div class="detection-card card-full-width" data-card="navigator-details">
+            <div class="card-header" onclick="toggleCard(this)">
+                <div class="card-header-left">
+                    <div class="card-title">
+                        📊 Navigator & Browser Details
+                    </div>
+                    <div class="card-status status-success" id="nav-status">
+                        <span class="status-badge"></span>
+                        <span>Complete</span>
+                    </div>
+                </div>
+                <div class="card-score" id="nav-score">/</div>
+                <div class="expand-icon">▼</div>
+            </div>
+            <div class="card-body">
+                <table class="detail-table">
+                    <tr>
+                        <td>navigator.cookieEnabled</td>
+                        <td><script>document.write(navigator.cookieEnabled);</script></td>
+                    </tr>
+                    <tr>
+                        <td>navigator.doNotTrack</td>
+                        <td><script>document.write(navigator.doNotTrack);</script></td>
+                    </tr>
+                    <tr>
+                        <td>navigator.msDoNotTrack</td>
+                        <td><script>document.write(navigator.msDoNotTrack);</script></td>
+                    </tr>
+                    <tr>
+                        <td>navigator.sendBeacon</td>
+                        <td><script>document.write(navigator.sendBeacon());</script></td>
+                    </tr>
+                    <tr>
+                        <td>navigator.userAgent</td>
+                        <td><script>document.write(navigator.userAgent);</script></td>
+                    </tr>
+                    <tr>
+                        <td>navigator.appName</td>
+                        <td><script>document.write(navigator.appName);</script></td>
+                    </tr>
+                    <tr>
+                        <td>navigator.vendor</td>
+                        <td><script>document.write(navigator.vendor);</script></td>
+                    </tr>
+                    <tr>
+                        <td>navigator.appCodeName</td>
+                        <td><script>document.write(navigator.appCodeName);</script></td>
+                    </tr>
+                    <tr>
+                        <td>navigator.getUserMedia</td>
+                        <td><script>document.write(navigator.getUserMedia());</script></td>
+                    </tr>
+                    <tr>
+                        <td>navigator.sayswho</td>
+                        <td><script>document.write(navigator.sayswho);</script></td>
+                    </tr>
+                    <tr>
+                        <td>navigator.javaEnabled</td>
+                        <td><script>document.write(navigator.javaEnabled());</script></td>
+                    </tr>
+                    <tr>
+                        <td>navigator.plugins</td>
+                        <td><script>document.write(JSON.stringify(navigator.plugins));</script></td>
+                    </tr>
+                    <tr>
+                        <td>screen.width</td>
+                        <td><script>document.write(screen.width);</script></td>
+                    </tr>
+                    <tr>
+                        <td>screen.height</td>
+                        <td><script>document.write(screen.height);</script></td>
+                    </tr>
+                    <tr>
+                        <td>screen.colorDepth</td>
+                        <td><script>document.write(screen.colorDepth);</script></td>
+                    </tr>
+                    <tr>
+                        <td>navigator.language</td>
+                        <td><script>document.write(navigator.language);</script></td>
+                    </tr>
+                    <tr>
+                        <td>navigator.loadPurpose</td>
+                        <td><script>document.write(navigator.loadPurpose);</script></td>
+                    </tr>
+                    <tr>
+                        <td>navigator.platform</td>
+                        <td><script>document.write(navigator.platform);</script></td>
+                    </tr>
+                    <tr>
+                        <td>navigator.mediaDevices</td>
+                        <td id="media1">
+                            <script>
+                            const med = document.getElementById('media1');
+                            (async () => {
+                                let devices = await navigator.mediaDevices.enumerateDevices();
+                                let str = "";
+                                devices.forEach(function (device) {
+                                    str += device.kind + ": " + device.label + " id = " + device.deviceId + "<br/>";
+                                });
+                                med.innerHTML = str;
+                            })();
+                            </script>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>navigator.getBattery</td>
+                        <td id="battery1">
+                            <script>
+                            const battery1 = document.getElementById('battery1');
+                            (async () => {
+                                const b = await navigator.getBattery();
+                                battery1.innerHTML = "Charging: " + b.charging + "<br/>Level: " + b.level;
+                            })();
+                            </script>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Canvas1</td>
+                        <td id="canvas1"></td>
+                    </tr>
+                    <tr>
+                        <td>Canvas2</td>
+                        <td id="canvas2"></td>
+                    </tr>
+                    <tr>
+                        <td>Canvas3 (iframe sandbox)</td>
+                        <td id="canvas3">
+                            <iframe class="canvased" id="canvas3-iframe" sandbox="allow-same-origin"></iframe>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Canvas4 (iframe sandbox)</td>
+                        <td id="canvas4">
+                            <iframe class="canvased" id="canvas4-iframe" sandbox="allow-same-origin"></iframe>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Canvas5 (iframe)</td>
+                        <td id="canvas5">
+                            <iframe class="canvased" id="canvas5-iframe"></iframe>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Hidden elements for FingerprintJS -->
+<div style="display:none;" id="fp2"></div>
+<div style="display:none;" id="fp"></div>
+
+<script>
+// Card Toggle Functions
+function toggleCard(header) {
+    const card = header.closest('.detection-card');
+    card.classList.toggle('expanded');
+}
+
+function expandAll() {
+    document.querySelectorAll('.detection-card').forEach(card => {
+        card.classList.add('expanded');
+    });
+}
+
+function collapseAll() {
+    document.querySelectorAll('.detection-card').forEach(card => {
+        card.classList.remove('expanded');
+    });
+}
+
+
+// Update card status helper
+function updateCardStatus(cardData, statusEl, scoreEl, statusClass, statusText, score) {
+    statusEl.className = 'card-status ' + statusClass;
+    statusEl.innerHTML = `<span class="status-badge"></span><span>${statusText}</span>`;
+    
+    scoreEl.textContent = score;
+    scoreEl.className = 'card-score';
+    if (score >= 70) scoreEl.classList.add('danger');
+    else if (score >= 40) scoreEl.classList.add('warning');
+    
+    updateGlobalStats();
+}
+</script>
+
+<script>
+  runBotDetection = function () {
+    var documentDetectionKeys = [
+      "__webdriver_evaluate",
+      "__selenium_evaluate",
+      "__webdriver_script_function",
+      "__webdriver_script_func",
+      "__webdriver_script_fn",
+      "__fxdriver_evaluate",
+      "__driver_unwrapped",
+      "__webdriver_unwrapped",
+      "__driver_evaluate",
+      "__selenium_unwrapped",
+      "__fxdriver_unwrapped",
+      "webdriver",
+      "__driver_evaluate",
+      "__webdriver_evaluate",
+      "__selenium_evaluate",
+      "__fxdriver_evaluate",
+      "__driver_unwrapped",
+      "__webdriver_unwrapped",
+      "__selenium_unwrapped",
+      "__fxdriver_unwrapped",
+      "_Selenium_IDE_Recorder",
+      "_selenium",
+      "calledSelenium",
+      "_WEBDRIVER_ELEM_CACHE",
+      "ChromeDriverw",
+      "driver-evaluate",
+      "webdriver-evaluate",
+      "selenium-evaluate",
+      "webdriverCommand",
+      "webdriver-evaluate-response",
+      "__webdriverFunc",
+      "__webdriver_script_fn",
+      "__$webdriverAsyncExecutor",
+      "__lastWatirAlert",
+      "__lastWatirConfirm",
+      "__lastWatirPrompt",
+      "$chrome_asyncScriptInfo",
+      "$cdc_asdjflasutopfhvcZLmcfl_"
+    ];
+
+    var windowDetectionKeys = [
+      "_phantom",
+      "__nightmare",
+      "_selenium",
+      "callPhantom",
+      "callSelenium",
+      "_Selenium_IDE_Recorder",
+    ];
+
+    for (const windowDetectionKey in windowDetectionKeys) {
+      const windowDetectionKeyValue = windowDetectionKeys[windowDetectionKey];
+      if (window[windowDetectionKeyValue]) {
+        return true;
+      }
+    }
+    for (const documentDetectionKey in documentDetectionKeys) {
+      const documentDetectionKeyValue = documentDetectionKeys[documentDetectionKey];
+      if (window['document'][documentDetectionKeyValue]) {
+        return true;
+      }
+    }
+
+    for (const documentKey in window['document']) {
+      if (documentKey.match(/\$[a-z]dc_/) && window['document'][documentKey]['cache_']) {
+        return true;
+      }
+    }
+
+    if (window['external'] && window['external'].toString() && (window['external'].toString()['indexOf']('Sequentum') != -1)) return true;
+
+    if (window['document']['documentElement']['getAttribute']('selenium')) return true;
+    if (window['document']['documentElement']['getAttribute']('webdriver')) return true;
+    if (window['document']['documentElement']['getAttribute']('driver')) return true;
+
+    return false;
+  };
+
+  // User-Agent Test
+  const userAgentElement = document.getElementById('user-agent-result');
+  userAgentElement.innerHTML = navigator.userAgent;
+  if (/HeadlessChrome/.test(navigator.userAgent)) {
+    userAgentElement.classList.add('failed');
+    userAgentElement.classList.remove('passed');
+  } else {
+    userAgentElement.classList.add('passed');
+    userAgentElement.classList.remove('failed');
+  }
+
+  // Webdriver Test
+  const webdriverElement = document.getElementById('webdriver-result');
+  if (navigator.webdriver || _.has(navigator, "webdriver")) {
+    webdriverElement.classList.add('failed');
+    webdriverElement.classList.remove('passed');
+    webdriverElement.innerHTML = 'present (failed)';
+  } else {
+    webdriverElement.classList.add('passed');
+    webdriverElement.classList.remove('failed');
+    webdriverElement.innerHTML = 'missing (passed)';
+  }
+
+  // Advanced Webdriver Test
+  const webdriverElement2 = document.getElementById('advanced-webdriver-result');
+  if (runBotDetection()) {
+    webdriverElement2.classList.add('failed');
+    webdriverElement2.classList.remove('passed');
+    webdriverElement2.innerHTML = 'failed';
+  } else {
+    webdriverElement2.classList.add('passed');
+    webdriverElement2.classList.remove('failed');
+    webdriverElement2.innerHTML = 'passed';
+  }
+
+  // Chrome Test
+  const chromeElement = document.getElementById('chrome-result');
+  if (!window.chrome) {
+    chromeElement.classList.add('failed');
+    chromeElement.classList.remove('passed');
+    chromeElement.innerHTML = 'missing (failed)';
+  } else {
+    chromeElement.classList.add('passed');
+    chromeElement.classList.remove('failed');
+    chromeElement.innerHTML = 'present (passed)';
+  }
+
+  // Permissions Test
+  const permissionsElement = document.getElementById('permissions-result');
+  (async () => {
+    const permissionStatus = await navigator.permissions.query({ name: 'notifications' });
+    permissionsElement.innerHTML = permissionStatus.state;
+    if (Notification.permission === 'denied' && permissionStatus.state === 'prompt') {
+      permissionsElement.classList.add('failed');
+      permissionsElement.classList.remove('passed');
+    } else {
+      permissionsElement.classList.add('passed');
+      permissionsElement.classList.remove('failed');
+    }
+  })();
+
+  // Plugins Length Test
+  const pluginsLengthElement = document.getElementById('plugins-length-result');
+  pluginsLengthElement.innerHTML = navigator.plugins.length;
+  if (navigator.plugins.length === 0) {
+    pluginsLengthElement.classList.add('failed');
+    pluginsLengthElement.classList.remove('passed');
+  } else {
+    pluginsLengthElement.classList.add('passed');
+    pluginsLengthElement.classList.remove('failed');
+  }
+
+  // Plugins type Test
+  const pluginsTypeElement = document.getElementById('plugins-type-result');
+  if (!(navigator.plugins instanceof PluginArray) || navigator.plugins.length === 0 || window.navigator.plugins[0].toString() !== '[object Plugin]') {
+    pluginsTypeElement.classList.add('failed');
+    pluginsTypeElement.classList.remove('passed');
+    pluginsTypeElement.innerText = "failed";
+  } else {
+    pluginsTypeElement.classList.add('passed');
+    pluginsTypeElement.classList.remove('failed');
+    pluginsTypeElement.innerText = "passed";
+  }
+
+  // Languages Test
+  const languagesElement = document.getElementById('languages-result');
+  languagesElement.innerHTML = navigator.languages;
+  if (!navigator.languages || navigator.languages.length === 0) {
+    languagesElement.classList.add('failed');
+    languagesElement.classList.remove('passed');
+  } else {
+    languagesElement.classList.add('passed');
+    languagesElement.classList.remove('failed');
+  }
+
+  // WebGL Tests
+  const webGLVendorElement = document.getElementById('webgl-vendor');
+  const webGLRendererElement = document.getElementById('webgl-renderer');
+
+  const canvas = document.createElement('canvas');
+  const gl = canvas.getContext('webgl') || canvas.getContext('webgl-experimental');
+  if (gl) {
+    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+
+    try {
+      // WebGL Vendor Test
+      const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+      webGLVendorElement.innerHTML = vendor;
+      if (vendor === 'Brian Paul' || vendor === "Google Inc.") {
+        webGLVendorElement.classList.add('failed');
+      } else {
+        webGLVendorElement.classList.add('passed');
+      }
+    } catch (e) {
+      webGLVendorElement.innerHTML = "Error: " + e;
+    }
+
+    try {
+      // WebGL Renderer Test
+      const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+      webGLRendererElement.innerHTML = renderer;
+      if (renderer === 'Mesa OffScreen' || renderer.indexOf("Swift") !== -1) {
+        webGLRendererElement.classList.add('failed');
+      } else
+        webGLRendererElement.classList.add('passed');
+    } catch (e) {
+      webGLRendererElement.innerHTML = "Error: " + e;
+    }
+  } else {
+    webGLVendorElement.innerHTML = "Canvas has no webgl context";
+    webGLRendererElement.innerHTML = "Canvas has no webgl context";
+    webGLVendorElement.classList.add('failed');
+    webGLRendererElement.classList.add('failed');
+  }
+
+  // Broken Image Dimensions Test
+  const brokenImageDimensionsElement = document.getElementById('broken-image-dimensions');
+  const body = document.body;
+  const image = document.createElement('img');
+  image.onerror = function () {
+    brokenImageDimensionsElement.innerHTML = `${image.width}x${image.height}`;
+    if (image.width == 0 && image.height == 0) {
+      brokenImageDimensionsElement.classList.add('failed');
+    } else {
+      brokenImageDimensionsElement.classList.add('passed');
+    }
+  };
+  body.appendChild(image);
+
+  // Update basic tests card status
+  setTimeout(() => {
+    const failedTests = document.querySelectorAll('[data-card="basic-tests"] .failed').length;
+    const totalTests = 11;
+    const score = Math.round(( failedTests / totalTests) * 100);
+    updateCardStatus(
+      'basic-tests',
+      document.getElementById('basic-status'),
+      document.getElementById('basic-score'),
+      failedTests > 5 ? 'status-danger' : (failedTests > 2 ? 'status-warning' : 'status-success'),
+      `${failedTests} Failed / ${totalTests} Tests`,
+      score
+    );
+  }, 500);
+</script>
+
+<script>
+  function utf8_encode(str_data) {
+    str_data = str_data.replace(/\r\n/g, "\n");
+    var utftext = "";
+
+    for (var n = 0; n < str_data.length; n++) {
+      var c = str_data.charCodeAt(n);
+      if (c < 128) {
+        utftext += String.fromCharCode(c);
+      } else if ((c > 127) && (c < 2048)) {
+        utftext += String.fromCharCode((c >> 6) | 192);
+        utftext += String.fromCharCode((c & 63) | 128);
+      } else {
+        utftext += String.fromCharCode((c >> 12) | 224);
+        utftext += String.fromCharCode(((c >> 6) & 63) | 128);
+        utftext += String.fromCharCode((c & 63) | 128);
+      }
+    }
+
+    return utftext;
+  }
+
+  function crc32(str) {
+    str = utf8_encode(str);
+    var table = "00000000 77073096 EE0E612C 990951BA 076DC419 706AF48F E963A535 9E6495A3 0EDB8832 79DCB8A4 E0D5E91E 97D2D988 09B64C2B 7EB17CBD E7B82D07 90BF1D91 1DB71064 6AB020F2 F3B97148 84BE41DE 1ADAD47D 6DDDE4EB F4D4B551 83D385C7 136C9856 646BA8C0 FD62F97A 8A65C9EC 14015C4F 63066CD9 FA0F3D63 8D080DF5 3B6E20C8 4C69105E D56041E4 A2677172 3C03E4D1 4B04D447 D20D85FD A50AB56B 35B5A8FA 42B2986C DBBBC9D6 ACBCF940 32D86CE3 45DF5C75 DCD60DCF ABD13D59 26D930AC 51DE003A C8D75180 BFD06116 21B4F4B5 56B3C423 CFBA9599 B8BDA50F 2802B89E 5F058808 C60CD9B2 B10BE924 2F6F7C87 58684C11 C1611DAB B6662D3D 76DC4190 01DB7106 98D220BC EFD5102A 71B18589 06B6B51F 9FBFE4A5 E8B8D433 7807C9A2 0F00F934 9609A88E E10E9818 7F6A0DBB 086D3D2D 91646C97 E6635C01 6B6B51F4 1C6C6162 856530D8 F262004E 6C0695ED 1B01A57B 8208F4C1 F50FC457 65B0D9C6 12B7E950 8BBEB8EA FCB9887C 62DD1DDF 15DA2D49 8CD37CF3 FBD44C65 4DB26158 3AB551CE A3BC0074 D4BB30E2 4ADFA541 3DD895D7 A4D1C46D D3D6F4FB 4369E96A 346ED9FC AD678846 DA60B8D0 44042D73 33031DE5 AA0A4C5F DD0D7CC9 5005713C 270241AA BE0B1010 C90C2086 5768B525 206F85B3 B966D409 CE61E49F 5EDEF90E 29D9C998 B0D09822 C7D7A8B4 59B33D17 2EB40D81 B7BD5C3B C0BA6CAD EDB88320 9ABFB3B6 03B6E20C 74B1D29A EAD54739 9DD277AF 04DB2615 73DC1683 E3630B12 94643B84 0D6D6A3E 7A6A5AA8 E40ECF0B 9309FF9D 0A00AE27 7D079EB1 F00F9344 8708A3D2 1E01F268 6906C2FE F762575D 806567CB 196C3671 6E6B06E7 FED41B76 89D32BE0 10DA7A5A 67DD4ACC F9B9DF6F 8EBEEFF9 17B7BE43 60B08ED5 D6D6A3E8 A1D1937E 38D8C2C4 4FDFF252 D1BB67F1 A6BC5767 3FB506DD 48B2364B D80D2BDA AF0A1B4C 36034AF6 41047A60 DF60EFC3 A867DF55 316E8EEF 4669BE79 CB61B38C BC66831A 256FD2A0 5268E236 CC0C7795 BB0B4703 220216B9 5505262F C5BA3BBE B2BD0B28 2BB45A92 5CB36A04 C2D7FFA7 B5D0CF31 2CD99E8B 5BDEAE1D 9B64C2B0 EC63F226 756AA39C 026D930A 9C0906A9 EB0E363F 72076785 05005713 95BF4A82 E2B87A14 7BB12BAE 0CB61B38 92D28E9B E5D5BE0D 7CDCEFB7 0BDBDF21 86D3D2D4 F1D4E242 68DDB3F8 1FDA836E 81BE16CD F6B9265B 6FB077E1 18B74777 88085AE6 FF0F6A70 66063BCA 11010B5C 8F659EFF F862AE69 616BFFD3 166CCF45 A00AE278 D70DD2EE 4E048354 3903B3C2 A7672661 D06016F7 4969474D 3E6E77DB AED16A4A D9D65ADC 40DF0B66 37D83BF0 A9BCAE53 DEBB9EC5 47B2CF7F 30B5FFE9 BDBDF21C CABAC28A 53B39330 24B4A3A6 BAD03605 CDD70693 54DE5729 23D967BF B3667A2E C4614AB8 5D681B02 2A6F2B94 B40BBE37 C30C8EA1 5A05DF1B 2D02EF8D";
+
+    if (typeof (crc) == "undefined") {
+      crc = 0;
+    }
+    var x = 0;
+    var y = 0;
+
+    crc = crc ^ (-1);
+    for (var i = 0, iTop = str.length; i < iTop; i++) {
+      y = (crc ^ str.charCodeAt(i)) & 0xFF;
+      x = "0x" + table.substr(y * 9, 8);
+      crc = (crc >>> 8) ^ x;
+    }
+
+    return crc ^ (-1);
+  }
+
+  String.prototype.hashCode = function () {
+    var hash = 0, i, chr;
+    if (this.length === 0) return hash;
+    for (i = 0; i < this.length; i++) {
+      chr = this.charCodeAt(i);
+      hash = ((hash << 5) - hash) + chr;
+      hash |= 0;
+    }
+    return hash;
+  };
+
+  let drawCanvas2 = function (num, useIframe = false) {
+    var canvas2d;
+    var isOkCanvas = true;
+    var canvasText = "Bot test <canvas> 1.1";
+
+    let canvasContainer = document.getElementById("canvas" + num);
+    let iframe = document.getElementById("canvas" + num + "-iframe");
+
+    var canvasElement = useIframe ? iframe.contentDocument.createElement("canvas") : document.createElement("canvas");
+
+    if (canvasElement.getContext) {
+      canvas2d = canvasElement.getContext("2d");
+
+      try {
+        canvasElement.setAttribute("width", 220);
+        canvasElement.setAttribute("height", 30);
+
+        canvas2d.textBaseline = "top";
+        canvas2d.font = "14px 'Arial'";
+        canvas2d.textBaseline = "alphabetic";
+        canvas2d.fillStyle = "#f60";
+        canvas2d.fillRect(53, 1, 62, 20);
+        canvas2d.fillStyle = "#069";
+        canvas2d.fillText(canvasText, 2, 15);
+        canvas2d.fillStyle = "rgba(102, 204, 0, 0.7)";
+        canvas2d.fillText(canvasText, 4, 17);
+      } catch (b) {
+        canvasElement = document.createElement("canvas");
+        canvas2d = canvasElement.getContext("2d");
+        if (void 0 === canvas2d || "function" != typeof canvasElement.getContext("2d").fillText) {
+          isOkCanvas = false;
+        } else {
+          canvasElement.setAttribute("width", 220);
+          canvasElement.setAttribute("height", 30);
+          canvas2d.textBaseline = "top";
+          canvas2d.font = "14px 'Arial'";
+          canvas2d.textBaseline = "alphabetic";
+          canvas2d.fillStyle = "#f60";
+          canvas2d.fillRect(125, 1, 62, 20);
+          canvas2d.fillStyle = "#069";
+          canvas2d.fillText(canvasText, 2, 15);
+          canvas2d.fillStyle = "rgba(102, 204, 0, 0.7)";
+          canvas2d.fillText(canvasText, 4, 17);
+        }
+      }
+
+      if (isOkCanvas && "function" == typeof canvasElement.toDataURL) {
+        var datUrl = canvasElement.toDataURL("image/png");
+        try {
+          if ("boolean" == typeof (datUrl) || void 0 === datUrl) {
+            throw e;
+          }
+        } catch (a) {
+          datUrl = "";
+        }
+        if (0 === datUrl.indexOf("data:image/png")) {
+
+        } else {
+          isOkCanvas = false;
+        }
+      } else {
+        isOkCanvas = false;
+      }
+    } else {
+      isOkCanvas = false;
+    }
+
+    if (isOkCanvas) {
+      let newDiv = document.createElement("div");
+      newDiv.innerHTML = "Hash: " + datUrl.hashCode();
+      canvasContainer.appendChild(canvasElement);
+      canvasContainer.appendChild(newDiv);
+    } else {
+      let newDiv = document.createElement("div");
+      newDiv.innerHTML = "Canvas failed";
+      canvasContainer.appendChild(newDiv);
+    }
+  };
+
+  window.canvasCount = 0;
+
+  drawCanvas2("1");
+  drawCanvas2("2");
+  drawCanvas2("3", true);
+  drawCanvas2("4", true);
+  drawCanvas2("5", true);
+</script>
+
+<script>
+// HTTP Headers Validation
+(async function() {
+    const validation = window.__VALIDATION_RESULT__;
+    const httpHeaders = window.__FIRST_REQUEST__.headers;
+    
+    const body = document.getElementById('http-body');
+    body.innerHTML = `
+        <div style="background:#F9FAFB; padding:1rem; border-radius:0.75rem; margin-bottom:1rem;">
+            <h3 style="margin-bottom:0.75rem; color:var(--color-text);">HTTP Headers</h3>
+            <table class="detail-table">
+                <tr>
+                    <td><strong>User-Agent:</strong></td>
+                    <td>${httpHeaders['user-agent']}</td>
+                </tr>
+                <tr>
+                    <td><strong>Platform:</strong></td>
+                    <td>${httpHeaders['sec-ch-ua-platform']}</td>
+                </tr>
+                <tr>
+                    <td><strong>Language:</strong></td>
+                    <td>${httpHeaders['accept-language']}</td>
+                </tr>
+            </table>
+        </div>
+        <h3 style="margin:1rem 0 0.75rem 0; color:var(--color-text);">Validation Issues</h3>
+        <table class="detail-table">
+            ${validation.issues.map(issue => `
+                <tr>
+                    <td><strong>${issue.type}</strong><br><small style="color:var(--color-neutral);">${issue.severity} (+${issue.points} pts)</small></td>
+                    <td><pre>${JSON.stringify(issue, null, 2)}</pre></td>
+                </tr>
+            `).join('')}
+        </table>
+    `;
+    
+    updateCardStatus(
+        'http-headers',
+        document.getElementById('http-status'),
+        document.getElementById('http-score'),
+        validation.score >= 70 ? 'status-danger' : (validation.score >= 40 ? 'status-warning' : 'status-success'),
+        `${validation.riskLevel} Risk`,
+        validation.score
+    );
+})();
+</script>
+
+<script>
+// Browser Profile Age
+detectProfileAge().then(result => {
+    const body = document.getElementById('profile-body');
+    body.innerHTML = `
+        <div style="text-align:center; margin:1.5rem 0;">
+            <div style="font-size:3.5rem; font-weight:800; color:${result.riskScore >= 70 ? 'var(--color-danger)' : result.riskScore >= 40 ? 'var(--color-warning)' : 'var(--color-success)'};">
+                ${result.riskScore}
+            </div>
+            <div style="font-size:0.85rem; color:var(--color-neutral); margin-top:0.5rem;">Risk Score (0-100)</div>
+        </div>
+        
+        <div style="padding:1rem; background:${result.riskScore >= 70 ? '#FEE2E2' : result.riskScore >= 40 ? '#FEF3C7' : '#D1FAE5'}; border-radius:0.75rem; border-left:4px solid ${result.riskScore >= 70 ? 'var(--color-danger)' : result.riskScore >= 40 ? 'var(--color-warning)' : 'var(--color-success)'}; margin:1rem 0;">
+            <strong style="font-size:1.1rem;">${result.status}</strong>
+        </div>
+        
+        <h3 style="margin:1.5rem 0 0.75rem 0; color:var(--color-text);">Detected Reasons</h3>
+        <ul style="background:#F9FAFB; padding:1rem 1rem 1rem 2rem; border-radius:0.75rem; line-height:1.8;">
+            ${result.reasons.map(reason => `<li>${reason}</li>`).join('')}
+        </ul>
+        
+        <h3 style="margin:1.5rem 0 0.75rem 0; color:var(--color-text);">Profile Data</h3>
+        <pre>${JSON.stringify(result.profileData, null, 2)}</pre>
+    `;
+    
+    updateCardStatus(
+        'profile-age',
+        document.getElementById('profile-status'),
+        document.getElementById('profile-score'),
+        result.riskScore >= 70 ? 'status-danger' : (result.riskScore >= 40 ? 'status-warning' : 'status-success'),
+        result.status,
+        result.riskScore
+    );
+});
+</script>
+
+<script>
+// IP Location & Timezone
+(async function() {
+    const detector = new ProxyDetector();
+    const results = await detector.runFullDetection();
+    
+    const body = document.getElementById('ip-body');
+    let html = '<table class="detail-table">';
+    
+    for (let checkName in results) {
+        const check = results[checkName];
+        html += `
+            <tr>
+                <td><strong>${checkName}</strong></td>
+                <td><pre>${JSON.stringify(check, null, 2)}</pre></td>
+            </tr>
+        `;
+    }
+    html += '</table>';
+    body.innerHTML = html;
+    
+    updateCardStatus(
+        'ip-location',
+        document.getElementById('ip-status'),
+        document.getElementById('ip-score'),
+        'status-success',
+        'Complete',
+        results.riskScore
+    );
+})();
+</script>
+
+<script>
+// Advanced Bot Detection (Test 1)
+BotDetector.runAll().then(() => {
+    const report = BotDetector.getReport();
+    
+    const body = document.getElementById('test1-body');
+    let flagsList = report.flags && report.flags.length > 0 ? 
+        '<ul style="background:#F9FAFB; padding:1rem 1rem 1rem 2rem; border-radius:0.75rem; line-height:1.8;">' + 
+        report.flags.map(f => `<li>${f}</li>`).join('') + 
+        '</ul>' : 
+        '<p style="padding:1rem; background:#D1FAE5; border-radius:0.75rem;">No flags detected</p>';
+    
+    body.innerHTML = `
+        <div style="text-align:center; margin:1.5rem 0;">
+            <div style="font-size:3.5rem; font-weight:800; color:${report.score > 50 ? 'var(--color-danger)' : (report.score > 25 ? 'var(--color-warning)' : 'var(--color-success)')};">
+                ${report.score}/100
+            </div>
+            <div style="font-size:0.85rem; color:var(--color-neutral); margin-top:0.5rem;">${report.verdict}</div>
+        </div>
+        
+        <h3 style="margin:1.5rem 0 0.75rem 0; color:var(--color-text);">Detected Issues (${report.totalFlags})</h3>
+        ${flagsList}
+        
+        <h3 style="margin:1.5rem 0 0.75rem 0; color:var(--color-text);">Detailed Results</h3>
+        <table class="detail-table">
+            ${Object.keys(report.results).map(checkName => {
+                const check = report.results[checkName];
+                return `
+                    <tr>
+                        <td><strong>${checkName}</strong></td>
+                        <td class="${check.suspicious ? 'failed' : 'passed'}">${check.suspicious ? 'SUSPICIOUS' : 'PASSED'}</td>
+                        <td><pre style="margin:0; white-space: pre-wrap;">${JSON.stringify(check, null, 2)}</pre></td>
+
+                    </tr>
+                `;
+            }).join('')}
+        </table>
+    `;
+    
+    updateCardStatus(
+        'advanced-test1',
+        document.getElementById('test1-status'),
+        document.getElementById('test1-score'),
+        report.score > 50 ? 'status-danger' : (report.score > 25 ? 'status-warning' : 'status-success'),
+        report.verdict,
+        report.score
+    );
+});
+</script>
+
+<script>
+// Playwright Detection (Test 2)
+(async function() {
+    const report = await PlaywrightDetector.runAll();
+    
+    const body = document.getElementById('test2-body');
+    body.innerHTML = `
+        <div style="text-align:center; margin:1.5rem 0;">
+            <div style="font-size:3.5rem; font-weight:800; color:${report.score >= 80 ? 'var(--color-danger)' : (report.score >= 50 ? 'var(--color-warning)' : 'var(--color-success)')};">
+                ${report.score}/100
+            </div>
+            <div style="font-size:0.85rem; color:var(--color-neutral); margin-top:0.5rem;">${report.verdict} • Confidence: ${report.confidence}</div>
+        </div>
+        
+        <h3 style="margin:1.5rem 0 0.75rem 0; color:var(--color-text);">Detected Issues (${report.totalFlags})</h3>
+        <ul style="background:#F9FAFB; padding:1rem 1rem 1rem 2rem; border-radius:0.75rem; line-height:1.8;">
+            ${report.flags.map(f => `<li>${f}</li>`).join('')}
+        </ul>
+        
+        <h3 style="margin:1.5rem 0 0.75rem 0; color:var(--color-text);">Detailed Results</h3>
+        <table class="detail-table">
+            ${Object.keys(report.results).map(checkName => {
+                const check = report.results[checkName];
+                return `
+                    <tr>
+                        <td><strong>${checkName}</strong></td>
+                        <td class="${check.detected ? 'failed' : 'passed'}">${check.detected ? 'DETECTED' : 'PASSED'}</td>
+                    </tr>
+                `;
+            }).join('')}
+        </table>
+    `;
+    
+    updateCardStatus(
+        'playwright-test',
+        document.getElementById('test2-status'),
+        document.getElementById('test2-score'),
+        report.score >= 80 ? 'status-danger' : (report.score >= 50 ? 'status-warning' : 'status-success'),
+        report.verdict,
+        report.score
+    );
+})();
+</script>
+
+<script>
+// FingerprintJS Analysis
+fpCollect.generateFingerprint().then((fingerprint) => {
+    $("#fp").text(JSON.stringify(fingerprint, null, 5));
+
+    let xscanner = fpscanner;
+    scannerResults = xscanner.analyseFingerprint(fingerprint);
+
+    let failedCount = 0;
+    let totalCount = 0;
+    let html = '<table class="detail-table">';
+
+    for (name in scannerResults) {
+        data = scannerResults[name];
+        let ok = "FAIL";
+        let c = "failed";
+        if (data.consistent == 2) {
+            ok = "WARN";
+            c = "warn";
+        }
+        if (data.consistent == 3) {
+            ok = "OK";
+            c = "passed";
+        } else if (data.consistent == 1) {
+            failedCount++;
+        }
+        totalCount++;
+        
+        html += `<tr><td><strong>${name}</strong></td><td class="${c}">${ok}</td></tr>`;
+        $("#fp2").append("<tr><td>" + name + "</td><td class='" + c + "'>" + ok + "</td><td><pre>" + JSON.stringify(data.data, null, 5) + "</pre></td></tr>");
+    }
+    
+    html += '</table>';
+    html += '<h3 style="margin:1.5rem 0 0.75rem 0; color:var(--color-text);">Raw Fingerprint Data</h3>';
+    html += '<pre>' + JSON.stringify(fingerprint, null, 2) + '</pre>';
+    
+    document.getElementById('fp-body').innerHTML = html;
+    
+    const score = Math.round(( failedCount / totalCount) * 100);
+    updateCardStatus(
+        'fingerprint',
+        document.getElementById('fp-status'),
+        document.getElementById('fp-score'),
+        failedCount > 5 ? 'status-danger' : (failedCount > 2 ? 'status-warning' : 'status-success'),
+        `${failedCount} Issues / ${totalCount} Checks`,
+        score
+    );
+});
+</script>
+
+</body>
+</html>
